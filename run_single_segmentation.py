@@ -26,10 +26,13 @@ print orientation
 
 #NORMALIZATION
 ct_scan = futil.normalize(ct_scan)
+print 'succesfully normalized'
 
 
 #PREDICT the segmentation
 t1 = time.time()
+print 't1: '
+print t1
 lobe_mask = segment.predict(ct_scan)
 t2 = time.time()
 print t2-t1
