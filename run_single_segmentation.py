@@ -6,13 +6,13 @@ import keras.backend as K
 K.set_learning_phase(1)
 
 #LOAD THE MODEL
-segment = v_seg.v_segmentor(batch_size=1, model='/end2endlobesegmentation/models/final.h5', ptch_sz=128, z_sz=64)
+segment = v_seg.v_segmentor(batch_size=1, model='/LungLobeSegmentation/models/final.h5', ptch_sz=128, z_sz=64)
 
 
 
 #LOAD THE CT_SCAN
 scan_file = 'test.mhd'
-ct_scan, origin, spacing, orientation = futil.load_itk('/end2endlobesegmentation/data/'+scan_file, get_orientation=True)
+ct_scan, origin, spacing, orientation = futil.load_itk('/LungLobeSegmentation/data/'+scan_file, get_orientation=True)
 if (orientation[-1] == -1):
     ct_scan = ct_scan[::-1]
 print 'Origem: '
@@ -36,4 +36,4 @@ print t2-t1
 
 
 #Save the segmentation
-futil.save_itk('/end2endlobesegmentation/results/'+scan_file, lobe_mask, origin, spacing)
+futil.save_itk('/LungLobeSegmentation/results/'+scan_file, lobe_mask, origin, spacing)
