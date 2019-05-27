@@ -64,7 +64,8 @@ class v_segmentor(object):
     def predict(self,x):
        
         #save shape for further upload
-        original_shape = x.shape        
+		print "save shape for further upload"
+        original_shape = x.shape
         
         #normalize input
         x = self._normalize(x)
