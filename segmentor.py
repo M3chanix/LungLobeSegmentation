@@ -5,6 +5,8 @@ Created on Wed Apr 12 10:20:10 2017
 """
 
 import numpy as np
+import tensorflow as tf
+from keras import backend as k
 from model import vnet
 from futils.util import sample_scan
 from  scipy import ndimage
@@ -40,6 +42,17 @@ class v_segmentor(object):
 		self.trgt_sz    = target_sz
 		self.trgt_z_sz  = target_z_sz
 
+		# TensorFlow wizardry
+		config = tf.ConfigProto()
+
+		# Don't pre-allocate memory; allocate as-needed
+		config.gpu_options.allow_growth = True
+
+		# Only allow a total of half the GPU memory to be allocated
+		config.gpu_options.per_process_gpu_memory_fraction = 0.5
+
+		# Create a session with the above options specified.
+		k.tensorflow_backend.set_session(tf.Session(config=config))
 
 		if(self.trgt_sz!=self.ptch_sz):
 			self.patching = True
