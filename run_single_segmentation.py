@@ -14,7 +14,7 @@ config.gpu_options.allow_growth = True
 config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 # Create a session with the above options specified.
-k.tensorflow_backend.set_session(tf.Session(config=config))
+K.tensorflow_backend.set_session(tf.Session(config=config))
 K.set_learning_phase(1)
 
 #LOAD THE MODEL
