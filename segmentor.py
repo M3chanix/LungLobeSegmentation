@@ -62,50 +62,43 @@ class v_segmentor(object):
 
    
 	def predict(self,x):
-	
 		#save shape for further upload
 		print "save shape for further upload"
 		original_shape = x.shape
 
 		#normalize input
-        print "normalize input"
+		print "normalize input"
 		x = self._normalize(x)
 
 		#rescale scan to 256,256,128
-        print "rescale scan to 256,256,128"
+		print "rescale scan to 256,256,128"
 		rescale_x =  sample_scan(x[:,:,:,np.newaxis],self.trgt_sz,self.trgt_z_sz)
 
-
-
 		#let's patch this scan (despatchito)
-        print "let's patch this scan (despatchito)"
+		print "let's patch this scan (despatchito)"
 		if(self.patching):
 			x_patch = deconstruct_patch(rescale_x)
 		else:
 			x_patch = rescale_x
 
 		del x,rescale_x
-
-
-
 		#update shape to NN - > slice axis is the last in the network
-        print "update shape to NN - > slice axis is the last in the network"
+		print "update shape to NN - > slice axis is the last in the network"
 		x_patch = np.rollaxis(x_patch,1,4)
 
-
 		#run predict
-        print "run predict"
+		print "run predict"
 		pred_array = self.v.predict(x_patch,self.batch_size,verbose=0)
 
 		# chooses our output :P (0:main pred, 1:aux output, 2-3: deep superv)
-        print "chooses our output :P (0:main pred, 1:aux output, 2-3: deep superv)"
+		print "chooses our output :P (0:main pred, 1:aux output, 2-3: deep superv)"
 		if len(pred_array)>1:
 			pred = pred_array[0]
 		else:
 			pred = pred_array
 
 		#turn back to image shape
-        print "turn back to image shape"
+		print "turn back to image shape"
 		pred = np.reshape(pred,(pred.shape[0],self.ptch_sz,self.ptch_sz,self.z_sz,-1))
 		pred = np.rollaxis(pred,3,1)
 
@@ -114,26 +107,18 @@ class v_segmentor(object):
 		if(self.patching):
 			pred = reconstruct_patch(pred)
 
-
-
-
 		#one hot decoding
-        print "one hot decoding"
+		print "one hot decoding"
 		masks = []
 		for p in pred:
 			masks.append(one_hot_decoding(p,labels))
 		masks=np.array(masks,dtype='uint8')
 
-
-
-
 		#upsample back to original shape
-        print "upsample back to original shape"
+		print "upsample back to original shape"
 		zoom_seq = np.array(original_shape,dtype='float')/np.array(masks.shape,dtype='float')
 		final_pred = ndimage.interpolation.zoom(masks,zoom_seq,order=0,prefilter=False)
 
 
 
 		return np.reshape(final_pred,original_shape)
-
-#       
