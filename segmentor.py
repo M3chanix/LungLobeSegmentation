@@ -14,117 +14,126 @@ labels = [0,4,5,6,7,8]
 
 
 def one_hot_decoding(img,labels,thresh=[]):
-    
-    new_img = np.zeros((img.shape[0],img.shape[1]))
-    r_img   = img.reshape(img.shape[0],img.shape[1],-1)
 
-    aux = np.argmax(r_img,axis=-1)
-    
-    
-    for i,l in enumerate(labels[1::]):
-        if(thresh==[]):        
-            new_img[aux==(i+1)]=l
-        else:
-            new_img[r_img[:,:,i+1]>thresh] = l
+	new_img = np.zeros((img.shape[0],img.shape[1]))
+	r_img   = img.reshape(img.shape[0],img.shape[1],-1)
 
-    return new_img
+	aux = np.argmax(r_img,axis=-1)
+
+
+	for i,l in enumerate(labels[1::]):
+		if(thresh==[]):
+			new_img[aux==(i+1)]=l
+		else:
+			new_img[r_img[:,:,i+1]>thresh] = l
+
+	return new_img
 
 
 
 class v_segmentor(object):
-    def __init__(self,batch_size=1,model='MODEL.h5',ptch_sz=128,z_sz=64,target_sz=256,target_z_sz=128):
-        self.batch_size = batch_size
-        self.model      = model
-        self.ptch_sz    = ptch_sz   
-        self.z_sz       = z_sz
-        self.trgt_sz    = target_sz
-        self.trgt_z_sz  = target_z_sz
+	def __init__(self,batch_size=1,model='MODEL.h5',ptch_sz=128,z_sz=64,target_sz=256,target_z_sz=128):
+		self.batch_size = batch_size
+		self.model      = model
+		self.ptch_sz    = ptch_sz
+		self.z_sz       = z_sz
+		self.trgt_sz    = target_sz
+		self.trgt_z_sz  = target_z_sz
 
-        
-        if(self.trgt_sz!=self.ptch_sz):
-            self.patching = True
-        else:
-            self.patching = False
-        
-        model_path = model.split('.h5')[0]+'.json'
-        with open(model_path, "r") as json_file:
-            json_model = json_file.read()
-        
-            self.v = model_from_json(json_model)
-       
-        self.v.load_weights((self.model))
-        
-    def _normalize(self,scan):
-        """returns normalized (0 mean 1 variance) scan"""
-        
-        scan = (scan - np.mean(scan))/(np.std(scan))
-        return scan
-    
+
+		if(self.trgt_sz!=self.ptch_sz):
+			self.patching = True
+		else:
+			self.patching = False
+
+		model_path = model.split('.h5')[0]+'.json'
+		with open(model_path, "r") as json_file:
+			json_model = json_file.read()
+
+			self.v = model_from_json(json_model)
+
+		self.v.load_weights((self.model))
+
+	def _normalize(self,scan):
+		"""returns normalized (0 mean 1 variance) scan"""
+
+		scan = (scan - np.mean(scan))/(np.std(scan))
+		return scan
+
    
-    def predict(self,x):
+	def predict(self,x):
 	
-        #save shape for further upload
-		original_shape = x.shape
+		#save shape for further upload
 		print "save shape for further upload"
+		original_shape = x.shape
 
-        #normalize input
-        x = self._normalize(x)
-       
-        #rescale scan to 256,256,128
-        rescale_x =  sample_scan(x[:,:,:,np.newaxis],self.trgt_sz,self.trgt_z_sz)
-        
-        
-        
-        #let's patch this scan (despatchito)
-        if(self.patching):
-            x_patch = deconstruct_patch(rescale_x)
-        else:
-            x_patch = rescale_x
+		#normalize input
+        print "normalize input"
+		x = self._normalize(x)
 
-        del x,rescale_x      
-        
-       
-            
-        #update shape to NN - > slice axis is the last in the network
-        x_patch = np.rollaxis(x_patch,1,4)
-        
-      
-        #run predict
-        pred_array = self.v.predict(x_patch,self.batch_size,verbose=0)
+		#rescale scan to 256,256,128
+        print "rescale scan to 256,256,128"
+		rescale_x =  sample_scan(x[:,:,:,np.newaxis],self.trgt_sz,self.trgt_z_sz)
 
-        # chooses our output :P (0:main pred, 1:aux output, 2-3: deep superv)
-        if len(pred_array)>1:
-            pred = pred_array[0]
-        else:
-            pred = pred_array
-        
-        #turn back to image shape
-        pred = np.reshape(pred,(pred.shape[0],self.ptch_sz,self.ptch_sz,self.z_sz,-1))
-        pred = np.rollaxis(pred,3,1)
-        
-        
-        
-        if(self.patching):
-            pred = reconstruct_patch(pred)
 
-        
 
-        
-        #one hot decoding
-        masks = []
-        for p in pred:
-            masks.append(one_hot_decoding(p,labels))
-        masks=np.array(masks,dtype='uint8')
-        
-        
+		#let's patch this scan (despatchito)
+        print "let's patch this scan (despatchito)"
+		if(self.patching):
+			x_patch = deconstruct_patch(rescale_x)
+		else:
+			x_patch = rescale_x
 
-        
-        #upsample back to original shape
-        zoom_seq = np.array(original_shape,dtype='float')/np.array(masks.shape,dtype='float')
-        final_pred = ndimage.interpolation.zoom(masks,zoom_seq,order=0,prefilter=False)
-        
-       
-        
-        return np.reshape(final_pred,original_shape)
-        
+		del x,rescale_x
+
+
+
+		#update shape to NN - > slice axis is the last in the network
+        print "update shape to NN - > slice axis is the last in the network"
+		x_patch = np.rollaxis(x_patch,1,4)
+
+
+		#run predict
+        print "run predict"
+		pred_array = self.v.predict(x_patch,self.batch_size,verbose=0)
+
+		# chooses our output :P (0:main pred, 1:aux output, 2-3: deep superv)
+        print "chooses our output :P (0:main pred, 1:aux output, 2-3: deep superv)"
+		if len(pred_array)>1:
+			pred = pred_array[0]
+		else:
+			pred = pred_array
+
+		#turn back to image shape
+        print "turn back to image shape"
+		pred = np.reshape(pred,(pred.shape[0],self.ptch_sz,self.ptch_sz,self.z_sz,-1))
+		pred = np.rollaxis(pred,3,1)
+
+
+
+		if(self.patching):
+			pred = reconstruct_patch(pred)
+
+
+
+
+		#one hot decoding
+        print "one hot decoding"
+		masks = []
+		for p in pred:
+			masks.append(one_hot_decoding(p,labels))
+		masks=np.array(masks,dtype='uint8')
+
+
+
+
+		#upsample back to original shape
+        print "upsample back to original shape"
+		zoom_seq = np.array(original_shape,dtype='float')/np.array(masks.shape,dtype='float')
+		final_pred = ndimage.interpolation.zoom(masks,zoom_seq,order=0,prefilter=False)
+
+
+
+		return np.reshape(final_pred,original_shape)
+
 #       
