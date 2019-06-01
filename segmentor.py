@@ -89,7 +89,7 @@ class v_segmentor(object):
 		#run predict
 		print "run predict"
 		#pred_array = self.v.predict(x_patch,self.batch_size,verbose=0)
-		pred_array = self.v.predict_on_batch(x)
+		pred_array = self.v.predict_on_batch(x_patch)
 
 		# chooses our output :P (0:main pred, 1:aux output, 2-3: deep superv)
 		print "chooses our output :P (0:main pred, 1:aux output, 2-3: deep superv)"
